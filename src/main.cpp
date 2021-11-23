@@ -1,11 +1,14 @@
 
 #define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
+//#include <GLFW/glfw3.h>
+#include "../incl/GLFW/glfw3.h"
 #include "../incl/linmath/linmath.h"
 #include "../incl/glad/gl.h"
+#include "./util/screen.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <fstream>
 
 static const struct
 {
@@ -42,10 +45,10 @@ static void error_callback(int error, const char *description)
     fprintf(stderr, "Error: %s\n", description);
 }
 
-static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+static void key_callback(GLFWwindow *screen, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        glfwSetWindowShouldClose(screen, GLFW_TRUE);
 }
 
 int main(void)
@@ -81,17 +84,12 @@ int main(void)
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
-    glCompileShader(vertex_shader);
-
-    fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
-    glCompileShader(fragment_shader);
+    Screen screen;
+    screen.shader_init("src/shader/vertex_shader.txt", "src/shader/fragment_shader.txt");
 
     program = glCreateProgram();
-    glAttachShader(program, vertex_shader);
-    glAttachShader(program, fragment_shader);
+    glAttachShader(program, screen.vert);
+    glAttachShader(program, screen.frag);
     glLinkProgram(program);
 
     mvp_location = glGetUniformLocation(program, "MVP");
@@ -105,13 +103,13 @@ int main(void)
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
                           sizeof(vertices[0]), (void *)(sizeof(float) * 2));
 
-    while (!glfwWindowShouldClose(window))
+    while (!glfwWindowShouldClose(screen))
     {
         float ratio;
         int width, height;
         mat4x4 m, p, mvp;
 
-        glfwGetFramebufferSize(window, &width, &height);
+        glfwGetFramebufferSize(screen, &width, &height);
         ratio = width / (float)height;
 
         glViewport(0, 0, width, height);
@@ -126,11 +124,11 @@ int main(void)
         glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)mvp);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(screen);
         glfwPollEvents();
     }
 
-    glfwDestroyWindow(window);
+    glfwDestroyWindow(screen);
 
     glfwTerminate();
     exit(EXIT_SUCCESS);
